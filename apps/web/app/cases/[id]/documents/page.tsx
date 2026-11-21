@@ -45,7 +45,7 @@ export default async function Documents({ params, searchParams }: {
       {data && data.items.length > 0 ? (
         <div className="case-documents-table" role="region" aria-label="Case documents table" tabIndex={0}><table>
           <caption>Documents returned for this case</caption>
-          <thead><tr><th>Document</th><th>Type / source</th><th>Processing status</th><th>Created</th></tr></thead>
+          <thead><tr><th scope="col">Document</th><th scope="col">Type / source</th><th scope="col">Processing status</th><th scope="col">Created</th></tr></thead>
           <tbody>
             {data.items.map((d) => (
               <tr key={d.document_id}>

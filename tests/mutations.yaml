@@ -407,7 +407,7 @@
   control: snapshots and reviewed content are immutable for every role (FR-016)
   file: src/finagent/database/migrations/versions/0005_investigation_domain.py
   find: "    for table in IMMUTABLE_TABLES:\n        op.execute(\n            f\"CREATE TRIGGER"
-  replace: "    for table in ():\n        op.execute(\n            f\"CREATE TRIGGER"
+  replace: "    for table in IMMUTABLE_TABLES:\n        if table in (\"evidence_snapshots\", \"evidence_snapshot_items\"):\n            continue\n        op.execute(\n            f\"CREATE TRIGGER"
   tests: [tests/integration/test_documents_evidence.py::test_snapshots_are_immutable_for_every_role]
 
 - id: conflict-detection

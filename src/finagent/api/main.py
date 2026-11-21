@@ -79,7 +79,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
     )
     app.state.settings = settings
-    app.state.session_factory = session_factory(settings.database_url.get_secret_value())
+    app.state.session_factory = session_factory(
+        settings.database_url.get_secret_value(), settings.database_auth_mode
+    )
     app.state.token_validator = build_validator(settings)
     app.state.resolver_policy = ResolverPolicy(
         step_up=frozenset(Permission(p) for p in settings.mfa_step_up_permissions),

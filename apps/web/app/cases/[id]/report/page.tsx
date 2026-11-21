@@ -114,7 +114,7 @@ export default async function ReportPage({ params, searchParams }: {
           <h2>Revision history</h2>
           <div className="report-history-table" role="region" aria-label="Report revision history table" tabIndex={0}><table>
             <caption>Recorded report revisions</caption>
-            <thead><tr><th>Version</th><th>Origin</th><th>Author</th><th>Valid</th><th>Note</th><th>Created</th></tr></thead>
+            <thead><tr><th scope="col">Version</th><th scope="col">Origin</th><th scope="col">Author</th><th scope="col">Valid</th><th scope="col">Note</th><th scope="col">Created</th></tr></thead>
             <tbody>
               {list.data.versions.map((h) => (
                 <tr key={h.version_no}>

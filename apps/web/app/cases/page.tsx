@@ -37,7 +37,7 @@ export default async function Cases({ searchParams }: { searchParams: Promise<Re
         <div className="case-queue-table" role="region" aria-label="Case queue table" tabIndex={0}><table>
           <caption>Cases you are permitted to see (newest first)</caption>
           <thead>
-            <tr><th>Case</th><th>Status</th><th>Priority</th><th>Alert</th><th>Created</th><th>Updated</th></tr>
+            <tr><th scope="col">Case</th><th scope="col">Status</th><th scope="col">Priority</th><th scope="col">Alert</th><th scope="col">Created</th><th scope="col">Updated</th></tr>
           </thead>
           <tbody>
             {page.items.map((c) => (

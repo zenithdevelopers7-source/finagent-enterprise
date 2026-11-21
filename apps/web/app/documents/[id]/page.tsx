@@ -55,7 +55,7 @@ export default async function DocumentReview({ params, searchParams }: {
       {d.fields.length === 0 ? <Empty>No fields extracted.</Empty> : (
         <div className="document-review-table" role="region" aria-label="Extracted document fields table" tabIndex={0}><table>
           <caption>Extracted fields and corrections</caption>
-          <thead><tr><th>Field</th><th>Value</th><th>State / validation</th><th>Provenance</th><th>Origin</th><th>Correct</th></tr></thead>
+          <thead><tr><th scope="col">Field</th><th scope="col">Value</th><th scope="col">State / validation</th><th scope="col">Provenance</th><th scope="col">Origin</th><th scope="col">Correct</th></tr></thead>
           <tbody>
             {d.fields.slice(0, 100).map((f) => (
               <tr key={f.field_id}>
@@ -89,7 +89,7 @@ export default async function DocumentReview({ params, searchParams }: {
       <h2>Versions</h2>
       {d.versions.length === 0 ? <Empty>No document versions were returned.</Empty> : <div className="document-review-table" role="region" aria-label="Document versions table" tabIndex={0}><table>
         <caption>Recorded document versions</caption>
-        <thead><tr><th>Version</th><th>Status</th><th>Scan</th><th>Parser</th><th>Size / sha256</th><th>Created</th></tr></thead>
+        <thead><tr><th scope="col">Version</th><th scope="col">Status</th><th scope="col">Scan</th><th scope="col">Parser</th><th scope="col">Size / sha256</th><th scope="col">Created</th></tr></thead>
         <tbody>
           {d.versions.map((v) => (
             <tr key={v.version_id}>

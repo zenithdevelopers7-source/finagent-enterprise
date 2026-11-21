@@ -74,7 +74,9 @@ class Worker:
     def __post_init__(self) -> None:
         if self.faults.rules and self.settings.environment not in LOCAL_ONLY_ENVIRONMENTS:
             raise RuntimeError("fault injection is only allowed in local/test")
-        self.factory = session_factory(self.settings.database_url.get_secret_value())
+        self.factory = session_factory(
+            self.settings.database_url.get_secret_value(), self.settings.database_auth_mode
+        )
         if self.notifier is None and self.settings.notification_backend == "bank":
             self.notifier = BankNotificationRouter(ConnectorFactory(self.settings, self.factory))
         self.notifier = self.notifier or build_notifier(

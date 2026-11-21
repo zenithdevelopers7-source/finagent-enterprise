@@ -31,7 +31,7 @@ export default async function Approvals({ searchParams }: { searchParams: Promis
       {data && data.items.length > 0 ? (
         <div className="approval-table" role="region" aria-label="Review request table" tabIndex={0}><table>
           <caption>Review requests · {status}</caption>
-          <thead><tr><th>Request</th><th>Case</th><th>Status</th><th>Reviewer</th><th>Submitted</th></tr></thead>
+          <thead><tr><th scope="col">Request</th><th scope="col">Case</th><th scope="col">Status</th><th scope="col">Reviewer</th><th scope="col">Submitted</th></tr></thead>
           <tbody>
             {data.items.map((r) => (
               <tr key={r.approval_request_id}>

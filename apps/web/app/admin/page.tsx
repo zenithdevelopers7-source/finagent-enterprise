@@ -37,7 +37,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<Re
         {dels.data && dels.data.items.length > 0 ? (
           <div className="admin-table" role="region" aria-label="Delegations table" tabIndex={0}><table>
             <caption>Recorded delegations</caption>
-            <thead><tr><th>Role</th><th>From</th><th>To</th><th>Window</th><th>State</th><th>Revoke</th></tr></thead>
+            <thead><tr><th scope="col">Role</th><th scope="col">From</th><th scope="col">To</th><th scope="col">Window</th><th scope="col">State</th><th scope="col">Revoke</th></tr></thead>
             <tbody>{dels.data.items.map((d) => (
               <tr key={d.delegation_id}>
                 <td>{d.role}</td><td>{d.delegator_id.slice(0, 8)}</td><td>{d.delegate_id.slice(0, 8)}</td>

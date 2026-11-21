@@ -1,58 +1,121 @@
+{{- $deadline := printf "%v" .Values.migration.activeDeadlineSeconds }}
+{{- if or (not (regexMatch "^[1-9][0-9]{0,5}$" $deadline)) (gt (int $deadline) 86400) }}
+{{- fail "migration.activeDeadlineSeconds must be a whole number between 1 and 86400" }}
+{{- end }}
+{{- if has .Values.migration.secretProviderClassName (list "finagent-api-kv" "finagent-worker-kv" "finagent-web-kv") }}
+{{- fail "migration.secretProviderClassName must differ from workload secret classes" }}
+{{- end }}
+{{- if not (has .Values.migration.databaseAuthMode (list "password" "azure_workload_identity")) }}
+{{- fail "migration.databaseAuthMode must be password or azure_workload_identity" }}
+{{- end }}
+{{- if not (has .Values.config.FINAGENT_DATABASE_AUTH_MODE (list "password" "azure_workload_identity")) }}
+{{- fail "config.FINAGENT_DATABASE_AUTH_MODE must be password or azure_workload_identity" }}
+{{- end }}
+{{- include "finagent.requireResources" (dict "name" "migration" "resources" .Values.migration.resources) }}
 apiVersion: v1
 kind: ConfigMap
-metadata: {name: finagent-config, labels: {{- include "finagent.labels" . | nindent 4 }}}
+metadata:
+  name: finagent-config
+  labels: {{- include "finagent.labels" . | nindent 4 }}
 data:
   FINAGENT_ENVIRONMENT: {{ .Values.environment | quote }}
 {{- range $k, $v := .Values.config }}
   {{ $k }}: {{ $v | quote }}
 {{- end }}
+{{- $identities := dict "api" .Values.workloadIdentity.clientIdApi "worker" .Values.workloadIdentity.clientIdWorker "web" .Values.workloadIdentity.clientIdWeb }}
+{{- range $name := list "api" "worker" "web" }}
+{{- $secrets := index $.Values.secretProviderClass.secrets $name }}
+{{- if not $secrets }}{{ fail (printf "secretProviderClass.secrets.%s must not be empty" $name) }}{{ end }}
 ---
 apiVersion: secrets-store.csi.x-k8s.io/v1
 kind: SecretProviderClass
-metadata: {name: {{ .Values.secretProviderClass.name }}}
+metadata: {name: {{ printf "finagent-%s-kv" $name | quote }}}
 spec:
   provider: azure
   secretObjects:
-    - secretName: finagent-secrets
+    - secretName: {{ printf "finagent-%s-secrets" $name | quote }}
       type: Opaque
       data:
-{{- range $env, $kv := .Values.secretProviderClass.secrets }}
-        - {objectName: {{ $kv }}, key: {{ $env }}}
+{{- range $env, $kv := $secrets }}
+        - {objectName: {{ $kv | quote }}, key: {{ $env | quote }}}
 {{- end }}
   parameters:
     usePodIdentity: "false"
-    clientID: {{ .Values.workloadIdentity.clientIdApi | quote }}
+    clientID: {{ index $identities $name | quote }}
+    keyvaultName: {{ $.Values.secretProviderClass.keyVaultName | quote }}
+    tenantId: {{ $.Values.secretProviderClass.tenantId | quote }}
+    objects: |
+      array:
+{{- range $env, $kv := $secrets }}
+        - |
+          objectName: {{ $kv | quote }}
+          objectType: secret
+{{- end }}
+{{- end }}
+---
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: {{ .Values.migration.secretProviderClassName | quote }}
+  annotations:
+    "helm.sh/hook": "pre-install,pre-upgrade"
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    clientID: {{ .Values.workloadIdentity.clientIdMigrator | quote }}
     keyvaultName: {{ .Values.secretProviderClass.keyVaultName | quote }}
     tenantId: {{ .Values.secretProviderClass.tenantId | quote }}
     objects: |
       array:
-{{- range $env, $kv := .Values.secretProviderClass.secrets }}
         - |
-          objectName: {{ $kv }}
+          objectName: {{ .Values.migration.databaseUrlSecretName | quote }}
+          objectAlias: migration-database-url
           objectType: secret
-{{- end }}
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: finagent-migrate
-  annotations: {"helm.sh/hook": pre-install,pre-upgrade, "helm.sh/hook-delete-policy": before-hook-creation}
+  annotations:
+    "helm.sh/hook": "pre-install,pre-upgrade"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
 spec:
   backoffLimit: 0
+  activeDeadlineSeconds: {{ $deadline }}
   template:
-    metadata: {labels: {app: finagent-migrate, azure.workload.identity/use: "true"}}
+    metadata: {labels: {app: finagent-migrator, app.kubernetes.io/part-of: finagent, azure.workload.identity/use: "true"}}
     spec:
       restartPolicy: Never
       serviceAccountName: finagent-migrator   # schema owner identity (ADR-0014); app pods never run DDL
       containers:
         - name: migrate
           image: "{{ .Values.image.registry }}/finagent-api:{{ .Values.image.tag }}"
-          command: ["python", "-m", "alembic", "upgrade", "head"]
-          {{- include "finagent.env" . | nindent 10 }}
-          {{- include "finagent.securityContext" . | nindent 10 }}
-          volumeMounts: [{name: tmp, mountPath: /tmp}]
-      volumes: [{name: tmp, emptyDir: {}}]
+          env:
+            - {name: FINAGENT_MIGRATION_DATABASE_AUTH_MODE, value: {{ .Values.migration.databaseAuthMode | quote }}}
+          command: ["/bin/sh", "-ec"]
+          args:
+            - 'FINAGENT_MIGRATION_DATABASE_URL="$(cat /mnt/migration/migration-database-url)"; test -n "$FINAGENT_MIGRATION_DATABASE_URL"; export FINAGENT_MIGRATION_DATABASE_URL; exec python -m alembic upgrade head'
+          {{- include "finagent.securityContext" 10001 | nindent 10 }}
+          resources: {{- toYaml .Values.migration.resources | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+            - {name: migration-secret, mountPath: /mnt/migration, readOnly: true}
+      volumes:
+        - {name: tmp, emptyDir: {}}
+        - name: migration-secret
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes: {secretProviderClass: {{ .Values.migration.secretProviderClassName | quote }}}
 {{- range $name, $spec := dict "api" .Values.api "worker" .Values.worker "web" .Values.web }}
+{{- include "finagent.requireResources" (dict "name" $name "resources" $spec.resources) }}
+{{- $grace := printf "%v" $spec.terminationGracePeriodSeconds }}
+{{- if or (not (regexMatch "^[1-9][0-9]{0,3}$" $grace)) (gt (int $grace) 3600) }}
+{{- fail (printf "%s.terminationGracePeriodSeconds must be a whole number between 1 and 3600" $name) }}
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -61,21 +124,24 @@ spec:
   replicas: {{ $spec.replicas }}
   selector: {matchLabels: {app: finagent-{{ $name }}}}
   template:
-    metadata: {labels: {app: finagent-{{ $name }}, azure.workload.identity/use: "true"}}
+    metadata: {labels: {app: finagent-{{ $name }}, app.kubernetes.io/part-of: finagent, azure.workload.identity/use: "true"}}
     spec:
       serviceAccountName: finagent-{{ $name }}
       automountServiceAccountToken: {{ if eq $name "web" }}false{{ else }}true{{ end }}
-      terminationGracePeriodSeconds: 30
+      terminationGracePeriodSeconds: {{ $grace }}
       containers:
         - name: {{ $name }}
           image: "{{ $.Values.image.registry }}/finagent-{{ $name }}:{{ $.Values.image.tag }}"
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
-          {{- include "finagent.env" $ | nindent 10 }}
-          {{- include "finagent.securityContext" $ | nindent 10 }}
+          envFrom:
+            - configMapRef: {name: finagent-config}
+            - secretRef: {name: {{ printf "finagent-%s-secrets" $name | quote }}}
+          {{- include "finagent.securityContext" (ternary 10003 10001 (eq $name "web")) | nindent 10 }}
           resources: {{- toYaml $spec.resources | nindent 12 }}
           volumeMounts: [{name: tmp, mountPath: /tmp}, {name: kv, mountPath: /mnt/kv, readOnly: true}]
           {{- if eq $name "api" }}
           ports: [{containerPort: 8000}]
+          startupProbe: {httpGet: {path: /health/live, port: 8000}, periodSeconds: 5, failureThreshold: 30}
           readinessProbe: {httpGet: {path: /health/ready, port: 8000}, periodSeconds: 10}
           livenessProbe: {httpGet: {path: /health/live, port: 8000}, periodSeconds: 20}
           {{- else if eq $name "web" }}
@@ -85,7 +151,7 @@ spec:
       volumes:
         - {name: tmp, emptyDir: {}}
         - name: kv
-          csi: {driver: secrets-store.csi.k8s.io, readOnly: true, volumeAttributes: {secretProviderClass: {{ $.Values.secretProviderClass.name }}}}
+          csi: {driver: secrets-store.csi.k8s.io, readOnly: true, volumeAttributes: {secretProviderClass: {{ printf "finagent-%s-kv" $name | quote }}}}
 {{- end }}
 ---
 apiVersion: v1
@@ -98,22 +164,79 @@ kind: Service
 metadata: {name: finagent-web}
 spec: {selector: {app: finagent-web}, ports: [{port: 80, targetPort: 3000}]}
 ---
-# Default deny; only web -> api, ingress -> web, and egress the platform needs (DNS + Azure PaaS via
-# private endpoints). Agents/tools have no arbitrary egress (prompt §12, §26).
+# Default deny is scoped to FinAgent pods, including the migration job.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: {name: finagent-default-deny}
-spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+spec: {podSelector: {matchLabels: {app.kubernetes.io/part-of: finagent}}, policyTypes: [Ingress, Egress]}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: {name: finagent-allow}
 spec:
-  podSelector: {matchLabels: {app: finagent-api}}
+  podSelector: {matchLabels: {app: finagent-api, app.kubernetes.io/part-of: finagent}}
   policyTypes: [Ingress]
-  ingress: [{from: [{podSelector: {matchLabels: {app: finagent-web}}}], ports: [{port: 8000}]}]
+  ingress: [{from: [{podSelector: {matchLabels: {app: finagent-web, app.kubernetes.io/part-of: finagent}}}], ports: [{port: 8000, protocol: TCP}]}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: finagent-web-ingress}
+spec:
+  podSelector: {matchLabels: {app: finagent-web, app.kubernetes.io/part-of: finagent}}
+  policyTypes: [Ingress]
+{{- with .Values.networkPolicy.webIngressPeers }}
+  {{- range . }}
+    {{- if not (or .podSelector .namespaceSelector .ipBlock) }}
+      {{- fail "webIngressPeers must contain a non-empty selector or ipBlock" }}
+    {{- end }}
+  {{- end }}
+  ingress:
+    - from: {{- toYaml . | nindent 8 }}
+      ports: [{port: 3000, protocol: TCP}]
+{{- else }}
+  ingress: []
+{{- end }}
+{{- range $name := list "api" "worker" "web" "migrator" }}
+{{- $rules := index $.Values.networkPolicy.egress $name }}
+{{- range $rules }}
+  {{- if or (not .to) (not .ports) }}
+    {{- fail (printf "networkPolicy.egress.%s rules require destinations and ports" $name) }}
+  {{- end }}
+  {{- range .ports }}
+    {{- if not .port }}
+      {{- fail (printf "networkPolicy.egress.%s ports must specify a port" $name) }}
+    {{- end }}
+  {{- end }}
+  {{- range .to }}
+    {{- if not (or .podSelector .namespaceSelector .ipBlock) }}
+      {{- fail (printf "networkPolicy.egress.%s destinations must not be empty" $name) }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: finagent-{{ $name }}-egress}
+spec:
+  podSelector: {matchLabels: {app: finagent-{{ $name }}, app.kubernetes.io/part-of: finagent}}
+  policyTypes: [Egress]
+{{- if or (eq $name "web") $rules }}
+  egress:
+  {{- if eq $name "web" }}
+    - to: [{podSelector: {matchLabels: {app: finagent-api, app.kubernetes.io/part-of: finagent}}}]
+      ports: [{port: 8000, protocol: TCP}]
+  {{- end }}
+  {{- with $rules }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- else }}
+  egress: []
+{{- end }}
+{{- end }}
+{{- range $name := list "api" "worker" "web" }}
 ---
 apiVersion: policy/v1
 kind: PodDisruptionBudget
-metadata: {name: finagent-worker}
-spec: {minAvailable: 1, selector: {matchLabels: {app: finagent-worker}}}
+metadata: {name: finagent-{{ $name }}}
+spec: {minAvailable: 1, selector: {matchLabels: {app: finagent-{{ $name }}, app.kubernetes.io/part-of: finagent}}}
+{{- end }}

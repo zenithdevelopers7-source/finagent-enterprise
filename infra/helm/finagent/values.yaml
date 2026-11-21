@@ -9,23 +9,50 @@ environment: staging          # local|test are refused by the application outsid
 workloadIdentity:
   clientIdApi: REPLACE_WITH_USER_ASSIGNED_IDENTITY_CLIENT_ID
   clientIdWorker: REPLACE_WITH_USER_ASSIGNED_IDENTITY_CLIENT_ID
+  clientIdWeb: REPLACE_WITH_WEB_IDENTITY_CLIENT_ID
+  clientIdMigrator: REPLACE_WITH_MIGRATOR_IDENTITY_CLIENT_ID
+
+migration:
+  secretProviderClassName: finagent-migrator-kv
+  databaseUrlSecretName: REPLACE_WITH_MIGRATION_DATABASE_URL_SECRET
+  activeDeadlineSeconds: 600  # proposed upper bound; align Helm timeout and operational runbook
+  databaseAuthMode: password  # experimental alternative: azure_workload_identity
+  resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: 500m, memory: 512Mi}} # proposed
 
 secretProviderClass:
-  name: finagent-kv
   keyVaultName: REPLACE_ME
   tenantId: REPLACE_ME
-  # Key Vault secret names -> environment variables (values never in Git)
+  # Each workload receives only its listed environment variables. Key Vault
+  # authorization must separately enforce the approved secret-level access.
   secrets:
-    FINAGENT_DATABASE_URL: finagent-database-url
-    FINAGENT_DATA_ENCRYPTION_KEY: finagent-data-encryption-key
-    FINAGENT_EVENT_SIGNING_KEY: finagent-event-signing-key
-    FINAGENT_CONNECTOR_CREDENTIALS: finagent-connector-credentials
-    FINAGENT_AZURE_SEARCH_API_KEY: finagent-azure-search-api-key
-    FINAGENT_AZURE_OPENAI_API_KEY: finagent-azure-openai-api-key
-    FINAGENT_WEB_SESSION_SECRET: finagent-web-session-secret
+    api:
+      FINAGENT_DATABASE_URL: finagent-database-url
+      FINAGENT_DATA_ENCRYPTION_KEY: finagent-data-encryption-key
+      FINAGENT_EVENT_SIGNING_KEY: finagent-event-signing-key
+      FINAGENT_CONNECTOR_CREDENTIALS: finagent-connector-credentials
+      FINAGENT_AZURE_SEARCH_API_KEY: finagent-azure-search-api-key
+      FINAGENT_AZURE_OPENAI_API_KEY: finagent-azure-openai-api-key
+    worker:
+      FINAGENT_DATABASE_URL: finagent-database-url
+      FINAGENT_DATA_ENCRYPTION_KEY: finagent-data-encryption-key
+      FINAGENT_EVENT_SIGNING_KEY: finagent-event-signing-key
+      FINAGENT_CONNECTOR_CREDENTIALS: finagent-connector-credentials
+      FINAGENT_AZURE_SEARCH_API_KEY: finagent-azure-search-api-key
+      FINAGENT_AZURE_OPENAI_API_KEY: finagent-azure-openai-api-key
+    web:
+      FINAGENT_WEB_SESSION_SECRET: finagent-web-session-secret
+      FINAGENT_WEB_AUTH_REDIS_URL: finagent-web-auth-redis-url
+      FINAGENT_ENTRA_WEB_CLIENT_SECRET: finagent-entra-web-client-secret
 
 config:   # non-secret settings
   FINAGENT_AUTH_MODE: entra
+  FINAGENT_DATABASE_AUTH_MODE: password  # experimental alternative: azure_workload_identity
+  FINAGENT_WEB_AUTH_MODE: entra
+  FINAGENT_WEB_ORIGIN: https://replace-me.invalid
+  FINAGENT_API_URL: https://replace-me.invalid
+  FINAGENT_ENTRA_TENANT_ID: REPLACE_ME
+  FINAGENT_ENTRA_WEB_CLIENT_ID: REPLACE_ME
+  FINAGENT_ENTRA_API_SCOPE: REPLACE_ME
   FINAGENT_ENTRA_ISSUER: https://login.microsoftonline.com/REPLACE_ME/v2.0
   FINAGENT_ENTRA_JWKS_URL: https://login.microsoftonline.com/REPLACE_ME/discovery/v2.0/keys
   FINAGENT_QUEUE_BACKEND: servicebus
@@ -46,15 +73,29 @@ config:   # non-secret settings
 
 api:
   replicas: 2
+  terminationGracePeriodSeconds: 30
   resources: {requests: {cpu: 250m, memory: 512Mi}, limits: {cpu: "1", memory: 1Gi}}
 worker:
   replicas: 2
+  terminationGracePeriodSeconds: 120  # proposed; review against configured timeouts and recovery tests
   resources: {requests: {cpu: 500m, memory: 1Gi}, limits: {cpu: "2", memory: 2Gi}}   # parser child capped separately
 web:
   replicas: 2
+  terminationGracePeriodSeconds: 30
   resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: 500m, memory: 512Mi}}
 
+# No external traffic is permitted until an operator supplies reviewed Kubernetes
+# NetworkPolicy peers and egress rules for the actual staging environment.
+networkPolicy:
+  webIngressPeers: []
+  egress:
+    api: []
+    worker: []
+    web: []
+    migrator: []
+
 ingress:
-  enabled: true
-  className: azure-application-gateway
-  host: finagent.REPLACE_ME
+  enabled: false
+  className: ""
+  host: ""
+  tlsSecretName: ""

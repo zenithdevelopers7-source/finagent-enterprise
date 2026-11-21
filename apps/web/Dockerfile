@@ -24,6 +24,7 @@ RUN rm -rf \
 WORKDIR /app
 COPY --from=build --chown=web:web /app/.next/standalone ./
 COPY --from=build --chown=web:web /app/.next/static ./.next/static
+COPY --from=build --chown=web:web /app/public ./public
 USER 10003
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1:3000/signin >/dev/null || exit 1

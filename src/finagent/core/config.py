@@ -11,6 +11,7 @@ import json
 import re
 from enum import StrEnum
 from functools import lru_cache
+from typing import Literal
 from uuid import UUID
 
 from pydantic import Field, SecretStr, model_validator
@@ -40,6 +41,7 @@ class Settings(BaseSettings):
 
     environment: Environment
     database_url: SecretStr
+    database_auth_mode: Literal["password", "azure_workload_identity"] = "password"
     auth_mode: AuthMode
     api_audience: str = "finagent-api"
 

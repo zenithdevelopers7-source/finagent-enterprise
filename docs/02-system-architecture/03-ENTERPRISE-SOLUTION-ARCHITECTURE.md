@@ -87,7 +87,42 @@ These are design boundaries, not independent assurance findings. See [security](
 
 ## 7. Deployment and operations
 
-Local development uses a web server, API, worker, PostgreSQL, Redis and synthetic integrations. Docker Compose, Helm and Terraform are present as development/reference artifacts. A target enterprise deployment must establish its own network topology, identity integration, secret management, observability, capacity, backup and restore, recovery objectives, and release process. The reference deployment document expressly states that Azure deployment and infrastructure have not been validated or applied.
+Local development uses a web server, API, worker, PostgreSQL, Redis and synthetic integrations.
+Docker Compose, Helm and Terraform are development/reference artifacts. The Terraform and Helm
+references have passed local checks and the infrastructure job in
+[GitHub Actions run #24](https://github.com/zenithdevelopers7-source/finagent-enterprise/actions/runs/44878502791);
+the [validation record](../05-testing-evidence/15-LOCAL-INFRASTRUCTURE-VALIDATION.md) describes
+their scope. These checks do not establish that Azure resources exist or that a deployment works.
+
+The following is a **proposed staging view**, not a deployed or approved network design. The
+chart and Terraform files are references; service-account bindings, private connectivity,
+certificate trust, database roles and the Azure identity connection need environment-specific
+decisions and verification.
+
+```mermaid
+flowchart LR
+  Analyst[Analyst or reviewer] --> Ingress[Proposed TLS ingress]
+  subgraph Cluster[Proposed Kubernetes environment]
+    Ingress --> Web[Web and server-side BFF]
+    Web --> API[API]
+    Worker[Worker]
+    Migrate[Migration job]
+  end
+  API --> DB[(PostgreSQL)]
+  Worker --> DB
+  Migrate --> DB
+  API --> Vault[Key Vault and workload identity]
+  Worker --> Vault
+  Migrate --> Vault
+  Web --> Vault
+  Web --> Redis[(Redis sessions)]
+  Worker --> Providers[Approved source and model providers]
+```
+
+The arrows show proposed dependencies, not unrestricted traffic or verified connectivity. A target
+enterprise deployment must establish network topology, secret management, observability, capacity,
+backup and restore, recovery objectives and a release process. The migration job's default-deny
+and secret bootstrap behavior also requires validation in the actual cluster.
 
 ## 8. Architecture decisions and dependencies
 

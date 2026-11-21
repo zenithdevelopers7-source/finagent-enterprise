@@ -20,7 +20,7 @@ export default async function Escalations() {
       {data && data.items.length > 0 ? (
         <div className="escalation-table" role="region" aria-label="Escalation table" tabIndex={0}><table>
           <caption>Open escalations in your access scope</caption>
-          <thead><tr><th>Case</th><th>Status when due</th><th>Due</th><th>Escalated</th><th>Owner</th><th>Notification</th></tr></thead>
+          <thead><tr><th scope="col">Case</th><th scope="col">Status when due</th><th scope="col">Due</th><th scope="col">Escalated</th><th scope="col">Owner</th><th scope="col">Notification</th></tr></thead>
           <tbody>{data.items.map((e) => (
             <tr key={e.escalation_id}>
               <td><Link href={`/cases/${e.case_id}`}>{e.case_id.slice(0, 8)}</Link></td>

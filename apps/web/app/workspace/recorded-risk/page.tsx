@@ -67,7 +67,7 @@ export default async function RecordedRiskPage({
           <div style={{ overflowX: "auto" }} role="region" aria-label="Case selection table" tabIndex={0}>
             <table>
               <caption>Cases returned for your signed-in account</caption>
-              <thead><tr><th>Case</th><th>Status</th><th>Priority</th><th>Alert type</th><th>Action</th></tr></thead>
+              <thead><tr><th scope="col">Case</th><th scope="col">Status</th><th scope="col">Priority</th><th scope="col">Alert type</th><th scope="col">Action</th></tr></thead>
               <tbody>{page.items.map((item) => (
                 <tr key={item.case_id}>
                   <td>{item.case_id.slice(0, 8)}</td><td>{item.status}</td><td>{item.priority}</td><td>{item.alert_type}</td>

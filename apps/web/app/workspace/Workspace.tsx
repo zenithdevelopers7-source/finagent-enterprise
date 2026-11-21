@@ -327,12 +327,12 @@ export default function Workspace() {
       <table>
         <thead>
           <tr>
-            <th>Case / customer</th>
-            <th>Risk</th>
-            <th>Status</th>
-            <th>Assigned to</th>
-            <th>Due</th>
-            <th>
+            <th scope="col">Case / customer</th>
+            <th scope="col">Risk</th>
+            <th scope="col">Status</th>
+            <th scope="col">Assigned to</th>
+            <th scope="col">Due</th>
+            <th scope="col">
               <span className="ws-sr">Open case</span>
             </th>
           </tr>
@@ -825,7 +825,7 @@ export default function Workspace() {
               <Card title="Evaluation results" subtitle="Results layout preview · no evaluation has been run">
                 <div className="ws-table-scroll" role="region" aria-label="Sample evaluation results" tabIndex={0}>
                   <table>
-                    <thead><tr><th>Proposed check</th><th>Dataset</th><th>Result</th><th>Review</th></tr></thead>
+                    <thead><tr><th scope="col">Proposed check</th><th scope="col">Dataset</th><th scope="col">Result</th><th scope="col">Review</th></tr></thead>
                     <tbody>
                       <tr><td>Evidence citations</td><td>Not selected</td><td><Badge tone="slate">Not run</Badge></td><td>Not available</td></tr>
                       <tr><td>Access isolation</td><td>Not selected</td><td><Badge tone="slate">Not run</Badge></td><td>Not available</td></tr>
@@ -909,7 +909,7 @@ export default function Workspace() {
                 </Card>
                 <Card title="Field comparison" subtitle="Illustrative field history · synthetic example">
                   {provenanceExample === "current" ? (
-                    <div className="ws-table-scroll" role="region" aria-label="Sample document field comparison" tabIndex={0}><table><thead><tr><th>Field</th><th>Example value</th><th>Review status</th></tr></thead><tbody>
+                    <div className="ws-table-scroll" role="region" aria-label="Sample document field comparison" tabIndex={0}><table><thead><tr><th scope="col">Field</th><th scope="col">Example value</th><th scope="col">Review status</th></tr></thead><tbody>
                       <tr><td>Issue date</td><td>Analyst-corrected example</td><td><Badge tone="amber">Review required</Badge></td></tr>
                       <tr><td>Name</td><td>Not shown</td><td><Badge tone="slate">Unverified</Badge></td></tr>
                       <tr><td>Address</td><td>Not shown</td><td><Badge tone="slate">Unverified</Badge></td></tr>
@@ -938,7 +938,7 @@ export default function Workspace() {
                 </Card>
               </div>
               <Card title="Security scenario results" subtitle="Results layout preview · no scenarios have run">
-                <div className="ws-table-scroll" role="region" aria-label="Sample security scenario results" tabIndex={0}><table><thead><tr><th>Scenario</th><th>Scope</th><th>Result</th><th>Evidence</th></tr></thead><tbody>
+                <div className="ws-table-scroll" role="region" aria-label="Sample security scenario results" tabIndex={0}><table><thead><tr><th scope="col">Scenario</th><th scope="col">Scope</th><th scope="col">Result</th><th scope="col">Evidence</th></tr></thead><tbody>
                   <tr><td>Document prompt injection</td><td>Synthetic document</td><td><Badge tone="slate">Not run</Badge></td><td>Not available</td></tr>
                   <tr><td>Unauthorized case access</td><td>Synthetic case and tenant</td><td><Badge tone="slate">Not run</Badge></td><td>Not available</td></tr>
                   <tr><td>Unsafe tool request</td><td>Simulated tool permission</td><td><Badge tone="slate">Not run</Badge></td><td>Not available</td></tr>
@@ -973,7 +973,7 @@ export default function Workspace() {
                 </Card>
               </div>
               <Card title="Release comparison" subtitle="Interface preview · no versions selected">
-                <div className="ws-table-scroll" role="region" aria-label="Sample release comparison" tabIndex={0}><table><thead><tr><th>Review item</th><th>Current version</th><th>Candidate version</th></tr></thead><tbody>
+                <div className="ws-table-scroll" role="region" aria-label="Sample release comparison" tabIndex={0}><table><thead><tr><th scope="col">Review item</th><th scope="col">Current version</th><th scope="col">Candidate version</th></tr></thead><tbody>
                   <tr><td>Model and provider</td><td>Not connected</td><td>Not selected</td></tr>
                   <tr><td>Prompt version</td><td>Not connected</td><td>Not selected</td></tr>
                   <tr><td>Evaluation dataset</td><td>Not available</td><td>Not selected</td></tr>
@@ -1332,12 +1332,12 @@ export default function Workspace() {
                   <table>
                     <thead>
                       <tr>
-                        <th>Transaction</th>
-                        <th>Date (UTC)</th>
-                        <th>Counterparty</th>
-                        <th>Direction</th>
-                        <th>Amount</th>
-                        <th>Status</th>
+                        <th scope="col">Transaction</th>
+                        <th scope="col">Date (UTC)</th>
+                        <th scope="col">Counterparty</th>
+                        <th scope="col">Direction</th>
+                        <th scope="col">Amount</th>
+                        <th scope="col">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1727,7 +1727,7 @@ export default function Workspace() {
                 </Card>
               </div>
               <Card title="Policy version comparison" subtitle="Planned review layout · no policy versions loaded">
-                <div className="ws-table-scroll" role="region" aria-label="Sample policy version comparison" tabIndex={0}><table><thead><tr><th>Review item</th><th>Current version</th><th>Proposed version</th></tr></thead><tbody>
+                <div className="ws-table-scroll" role="region" aria-label="Sample policy version comparison" tabIndex={0}><table><thead><tr><th scope="col">Review item</th><th scope="col">Current version</th><th scope="col">Proposed version</th></tr></thead><tbody>
                   <tr><td>Policy version</td><td>Not connected</td><td>Not selected</td></tr>
                   <tr><td>Effective date</td><td>Not available</td><td>Not available</td></tr>
                   <tr><td>Relevant requirements</td><td>Not available</td><td>Not available</td></tr>

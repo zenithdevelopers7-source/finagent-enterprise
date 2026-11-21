@@ -86,7 +86,7 @@ export default async function CaseOverview({ params, searchParams }: {
       {runs.data && runs.data.items.length > 0 ? (
         <div className="case-run-table" role="region" aria-label="Investigation runs table" tabIndex={0}><table>
           <caption>Recorded investigation runs</caption>
-          <thead><tr><th>Run</th><th>Status</th><th>Reason / next action</th><th>Started</th></tr></thead>
+          <thead><tr><th scope="col">Run</th><th scope="col">Status</th><th scope="col">Reason / next action</th><th scope="col">Started</th></tr></thead>
           <tbody>
             {runs.data.items.map((r) => (
               <tr key={r.run_id}>

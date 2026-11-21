@@ -1,0 +1,30 @@
+{{- $rules := .Values.networkPolicy.egress.migrator }}
+{{- range $rules }}
+  {{- if or (not .to) (not .ports) }}
+    {{- fail "networkPolicy.egress.migrator rules require destinations and ports" }}
+  {{- end }}
+  {{- range .ports }}
+    {{- if not .port }}{{ fail "networkPolicy.egress.migrator ports must specify a port" }}{{ end }}
+  {{- end }}
+  {{- range .to }}
+    {{- if not (or .podSelector .namespaceSelector .ipBlock) }}{{ fail "networkPolicy.egress.migrator destinations must not be empty" }}{{ end }}
+  {{- end }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: finagent-migrator-bootstrap
+  annotations:
+    "helm.sh/hook": "pre-install,pre-upgrade"
+    "helm.sh/hook-weight": "-20"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+spec:
+  podSelector:
+    matchLabels: {app: finagent-migrator, app.kubernetes.io/part-of: finagent}
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  {{- if $rules }}
+  egress: {{- toYaml $rules | nindent 4 }}
+  {{- else }}
+  egress: []
+  {{- end }}

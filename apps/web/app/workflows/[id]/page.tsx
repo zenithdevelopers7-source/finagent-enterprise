@@ -59,7 +59,7 @@ export default async function RunMonitor({ params, searchParams }: {
       <h2>Steps</h2>
       {r.steps.length === 0 ? <p>No steps were returned for this run.</p> : <div className="workflow-steps-table" role="region" aria-label="Workflow steps table" tabIndex={0}><table>
         <caption>Recorded workflow steps</caption>
-        <thead><tr><th>Node</th><th>Status</th><th>Attempt</th><th>Error</th><th>Started</th><th>Finished</th></tr></thead>
+        <thead><tr><th scope="col">Node</th><th scope="col">Status</th><th scope="col">Attempt</th><th scope="col">Error</th><th scope="col">Started</th><th scope="col">Finished</th></tr></thead>
         <tbody>{r.steps.map((s, i) => (
           <tr key={i}><td>{s.node}</td><td>{s.status}</td><td>{s.attempt}</td><td>{s.error_code ?? "-"}</td>
             <td><When iso={s.started_at} /></td><td><When iso={s.finished_at} /></td></tr>))}</tbody>

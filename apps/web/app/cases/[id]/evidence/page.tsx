@@ -69,7 +69,7 @@ export default async function EvidencePage({ params, searchParams }: {
           {data.items.length === 0 ? <Empty>No current evidence was returned. This does not establish that evidence does not exist.</Empty> : (
             <div className="case-evidence-table" role="region" aria-label="Current evidence table" tabIndex={0}><table>
               <caption>Current evidence sources</caption>
-              <thead><tr><th>Source</th><th>Version</th><th>Freshness / completeness</th><th>As of</th><th>Content</th></tr></thead>
+              <thead><tr><th scope="col">Source</th><th scope="col">Version</th><th scope="col">Freshness / completeness</th><th scope="col">As of</th><th scope="col">Content</th></tr></thead>
               <tbody>
                 {data.items.map((i) => (
                   <tr id={`evidence-${i.evidence_item_id}`} key={i.evidence_item_id}>
@@ -95,7 +95,7 @@ export default async function EvidencePage({ params, searchParams }: {
       {snaps.data && snaps.data.items.length > 0 ? (
         <div className="case-evidence-table" role="region" aria-label="Evidence snapshots table" tabIndex={0}><table>
           <caption>Recorded evidence snapshots</caption>
-          <thead><tr><th>Version</th><th>Completeness</th><th>Open conflicts</th><th>Gaps</th><th>Created</th></tr></thead>
+          <thead><tr><th scope="col">Version</th><th scope="col">Completeness</th><th scope="col">Open conflicts</th><th scope="col">Gaps</th><th scope="col">Created</th></tr></thead>
           <tbody>
             {snaps.data.items.map((s) => (
               <tr key={s.snapshot_id}>
